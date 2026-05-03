@@ -3,7 +3,6 @@ on:
   schedule:
     - cron: '0 1 * * 0'
   workflow_dispatch:
-
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -19,11 +18,10 @@ jobs:
           num_batches=$(( (total + 99) / 100 ))
           batches=$(seq 1 $num_batches | jq -R . | jq -sc .)
           echo "batches=$batches" >> $GITHUB_OUTPUT
-
   discover:
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 85
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       max-parallel: 10
@@ -46,14 +44,13 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           start=$(( (${{ matrix.batch }} - 1) * 100 + 1 ))
           sed -n "${start},$((start + 99))p" domains.txt > batch_domains.txt
-          subfinder -dL batch_domains.txt -silent -timeout 30 -t 10 -max-time 70 -o subs_raw.txt || true
+          subfinder -dL batch_domains.txt -silent -timeout 30 -t 10 -max-time 350 -o subs_raw.txt || true
           grep -vP '^\d+[-\.]\d+[-\.]\d+[-\.]\d+\.' subs_raw.txt > batch_subs.txt || true
       - name: Upload batch results
         uses: actions/upload-artifact@v4
         with:
           name: subs-batch-${{ matrix.batch }}
           path: batch_subs.txt
-
   combine:
     needs: discover
     runs-on: ubuntu-latest
