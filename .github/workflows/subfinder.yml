@@ -46,7 +46,7 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           start=$(( (${{ matrix.batch }} - 1) * 100 + 1 ))
           sed -n "${start},$((start + 99))p" domains.txt > batch_domains.txt
-          subfinder -dL batch_domains.txt -silent -timeout 30 -t 10 -max-time 60 -o subs_raw.txt || true
+          subfinder -dL batch_domains.txt -silent -timeout 30 -t 10 -max-time 70 -o subs_raw.txt || true
           grep -vP '^\d+[-\.]\d+[-\.]\d+[-\.]\d+\.' subs_raw.txt > batch_subs.txt || true
       - name: Upload batch results
         uses: actions/upload-artifact@v4
@@ -57,6 +57,7 @@ jobs:
   combine:
     needs: discover
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - name: Checkout
         uses: actions/checkout@v4
