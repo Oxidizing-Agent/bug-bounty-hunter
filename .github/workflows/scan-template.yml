@@ -123,7 +123,7 @@ jobs:
             $TAGS_FLAG \
             -severity ${{ inputs.severity }} \
             -silent -retries 1 -timeout 8 \
-            -bulk-size 100 -concurrency 100 \
+            -bulk-size 25 -concurrency 30 \
             -o results.txt || true
 
       - name: Check for results
