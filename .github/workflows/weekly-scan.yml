@@ -1,0 +1,114 @@
+name: Weekly Scans
+on:
+  schedule:
+    - cron: '0 2 * * 3'  # Wednesday 2am UTC — after Monday recon finishes
+  workflow_dispatch:
+
+jobs:
+
+  # ─── 1. JWT ────────────────────────────────────────────────────
+  jwt:
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "JWT Vulnerabilities"
+      tags: "jwt"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 2. GRAPHQL ────────────────────────────────────────────────
+  graphql:
+    needs: jwt
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "GraphQL"
+      tags: "graphql"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 3. SWAGGER / API DOCS ─────────────────────────────────────
+  swagger:
+    needs: graphql
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Exposed API Docs"
+      tags: "swagger,api-docs,openapi"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 4. GIT / ENV EXPOSURE ─────────────────────────────────────
+  git_env:
+    needs: swagger
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Git/Env Exposure"
+      tags: "git,env-file,config"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 5. EXPOSED FILES ──────────────────────────────────────────
+  exposed_files:
+    needs: git_env
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Exposed Files"
+      tags: "exposure,file"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 6. DEFAULT LOGINS ─────────────────────────────────────────
+  default_logins:
+    needs: exposed_files
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Default Credentials"
+      tags: "default-login"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 7. JENKINS / GRAFANA / KIBANA ─────────────────────────────
+  devtools:
+    needs: default_logins
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Exposed Dev Tools"
+      tags: "jenkins,grafana,kibana"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 8. S3 BUCKETS ─────────────────────────────────────────────
+  s3:
+    needs: devtools
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "S3 Misconfiguration"
+      tags: "aws-s3,s3"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 9. SPRING BOOT ACTUATOR ───────────────────────────────────
+  springboot:
+    needs: s3
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Spring Boot Actuator"
+      tags: "springboot,actuator"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
