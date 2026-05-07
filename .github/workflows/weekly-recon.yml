@@ -265,6 +265,7 @@ jobs:
             new_live_hosts.txt \
             takeover_candidates.txt
           git diff --staged --quiet || git commit -m "Weekly recon $(date +'%Y-%m-%d') - $(wc -l < live_hosts.txt) live | $(wc -l < new_subdomains.txt) new subs | ${{ env.takeover_count }} takeover candidates"
+          git pull --rebase origin main || true
           git push
 
       # ── EMAIL: only if subzy found takeover candidates ───────────
