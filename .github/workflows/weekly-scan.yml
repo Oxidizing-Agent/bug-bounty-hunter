@@ -1,19 +1,50 @@
 name: Weekly Scans
 on:
   schedule:
-    - cron: '30 18 * * 0'
+    - cron: '30 20 * * 0'
   workflow_dispatch:
-
 jobs:
-  # ─── COMBINED WEEKLY SCAN ──────────────────────────────────────
+  # ─── 1. COMBINED WEEKLY SCAN ───────────────────────────────────
   # JWT + GraphQL + Swagger + Git/Env + Exposed Files +
   # Default Logins + Dev Tools + S3 + SpringBoot in one nuclei run
-  # These all use live_hosts and change slowly — weekly is enough
   weekly_combined:
     uses: ./.github/workflows/scan-template.yml
     with:
       scan_name: "Weekly Combined"
       tags: "jwt,graphql,swagger,api-docs,openapi,git,env-file,config,exposure,file,default-login,jenkins,grafana,kibana,aws-s3,s3,springboot,actuator"
+      severity: "low,medium,high,critical"
+      input_file: "live_hosts"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 2. JS SECRETS SCAN ────────────────────────────────────────
+  # Katana crawls live hosts to find hidden URLs and JS files
+  # Nuclei then scans those URLs for secrets and API keys
+  # This is where real credentials hide — JS files are goldmine
+  weekly_js_secrets:
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "JS Secrets"
+      tags: "exposure,token,secret,api-key,keys"
+      severity: "low,medium,high,critical"
+      use_katana: true
+      input_file: "live_hosts"
+    secrets:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+  # ─── 3. CUSTOM TEMPLATES ───────────────────────────────────────
+  # Runs our hand-crafted templates separately to ensure they fire
+  # graphql-field-suggestion-leak, spring-boot-actuator-exposed,
+  # swagger-unauthenticated-execution — better than nuclei defaults
+  weekly_custom:
+    uses: ./.github/workflows/scan-template.yml
+    with:
+      scan_name: "Custom Templates"
+      tags: "graphql,springboot,actuator,swagger,api"
       severity: "low,medium,high,critical"
       input_file: "live_hosts"
     secrets:
